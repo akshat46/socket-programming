@@ -18,6 +18,9 @@ int main(int argc, char *argv[]){
   fd_set fdset_send;
   fd_set fdset_recv;
   struct servent *serv;
+  struct hostent *host;
+  struct in_addr **host_ip;
+  int addr_type;
   struct timeval tv;
   tv.tv_sec = 60;
   tv.tv_usec = 0;
@@ -33,13 +36,13 @@ int main(int argc, char *argv[]){
   char str[strlen(argv[1])+1];
   strcpy(str, argv[1]);
 
-  //2. dns-name
-  char dns[strlen(argv[2])];
-  strcpy(str, argv[2]);
+  //2. host_name-name
+  char host_name[strlen(argv[2])];
+  strcpy(host_name, argv[2]);
 
   //3. service-name
-  char srvName[strlen(argv[3])];
-  strcpy(srv, argv[3]);
+  char srv_name[strlen(argv[3])];
+  strcpy(srv_name, argv[3]);
 
   // 4. option
   if(strcmp(type_tcp, argv[4])==0){
@@ -52,39 +55,50 @@ int main(int argc, char *argv[]){
     return 0;
   }
 
+  host = gethostbyname(host_name);
+  host_ip = (struct in_addr **) host->h_addr_list;
+  addr_type = host->h_addrtype;
+  printf("\"%s\" Ip address: %s \n", host->h_name, inet_ntoa(*host_ip[0]));
+
   // creating a socket
   if(type==0){
     const char tcp[] = "tcp";
-    serv = getservbyname(srvName, tcp);
-    sokt = socket(AF_INET, SOCK_STREAM, 0);
+    serv = getservbyname(srv_name, tcp);
+    sokt = socket(addr_type, SOCK_STREAM, 0);
   }
   else{
     const char udp[] = "udp";
-    serv = getservbyname(srvName, udp);
+    serv = getservbyname(srv_name, udp);
     sokt = socket(AF_INET, SOCK_DGRAM, 0);
   }
+
+  printf("\"%s\" port number: %d \n", srv_name, ntohs(serv->s_port));
 
   // timeout option
   setsockopt(sokt, SOL_SOCKET, SO_SNDTIMEO, (struct timeval *)&tv, sizeof(tv));
   setsockopt(sokt, SOL_SOCKET, SO_RCVTIMEO, (struct timeval *)&tv, sizeof(tv));
 
+
   //specify address
+  int port_num = ntohs(serv->s_port);
   struct sockaddr_in destn_addr;
   destn_addr.sin_family = AF_INET;
-  destn_addr.sin_port = htons(serv.s_port); // servent port number
-  destn_addr.sin_addr.s_addr = inet_addr(argv[2]);
+  destn_addr.sin_port = ntohs(port_num); // servent port number
+  destn_addr.sin_addr.s_addr = inet_addr(inet_ntoa(*host_ip[0]));
 
   char response[strlen(str)];
   int len;
 
   if(type==0){
     //connect
+    printf("establishing connection... \n");
     int connection_status = connect(sokt, (struct sockaddr *) &destn_addr, sizeof(destn_addr));
     if(connection_status == -1){
       fprintf(stderr, "Error: Could not connect to the remote socket.\n");
       return 0;
     }
 
+    printf("sending data... \n");
     // send data
     int sent = send(sokt, str, sizeof(str), 0);
     if(sent==-1){
@@ -96,6 +110,7 @@ int main(int argc, char *argv[]){
     len = recv(sokt, (char*)&response, sizeof(response), 0);
   }
   else{
+    printf("sending data... \n");
     int sent = sendto(sokt, str, sizeof(str), 0, (struct sockaddr *) &destn_addr, sizeof(destn_addr));
     if(sent==-1){
       fprintf(stderr, "Error: Unable to send. Closing socket.");
