@@ -69,7 +69,7 @@ int main(int argc, char *argv[]){
   else{
     const char udp[] = "udp";
     serv = getservbyname(srv_name, udp);
-    sokt = socket(AF_INET, SOCK_DGRAM, 0);
+    sokt = socket(addr_type, SOCK_DGRAM, 0);
   }
 
   printf("\"%s\" port number: %d \n", srv_name, ntohs(serv->s_port));
@@ -78,21 +78,32 @@ int main(int argc, char *argv[]){
   setsockopt(sokt, SOL_SOCKET, SO_SNDTIMEO, (struct timeval *)&tv, sizeof(tv));
   setsockopt(sokt, SOL_SOCKET, SO_RCVTIMEO, (struct timeval *)&tv, sizeof(tv));
 
-
   //specify address
   int port_num = ntohs(serv->s_port);
-  struct sockaddr_in destn_addr;
-  destn_addr.sin_family = AF_INET;
-  destn_addr.sin_port = ntohs(port_num); // servent port number
-  destn_addr.sin_addr.s_addr = inet_addr(inet_ntoa(*host_ip[0]));
-
   char response[strlen(str)];
   int len;
+  struct sockaddr_in destn_addr;
+  struct sockaddr_in6 destn_addr6;
+  if(addr_type==AF_INET){
+    destn_addr.sin_family = AF_INET;
+    destn_addr.sin_port = ntohs(port_num);
+    inet_pton(AF_INET, inet_ntoa(*host_ip[0]), &(destn_addr.sin_addr));
+  } else if(addr_type==AF_INET6){
+    destn_addr6.sin6_family = AF_INET6;
+    destn_addr6.sin6_port = ntohs(port_num);
+    inet_pton(AF_INET6, inet_ntoa(*host_ip[0]), &(destn_addr6.sin6_addr));
+  }
+  //destn_addr.sin_addr.s_addr = inet_addr(inet_ntoa(*host_ip[0]));
 
   if(type==0){
     //connect
     printf("establishing connection... \n");
-    int connection_status = connect(sokt, (struct sockaddr *) &destn_addr, sizeof(destn_addr));
+    int connection_status;
+    if(addr_type==AF_INET){
+      connection_status = connect(sokt, (struct sockaddr *) &destn_addr, sizeof(destn_addr));
+    }else {
+      connection_status = connect(sokt, (struct sockaddr *) &destn_addr6, sizeof(destn_addr6));
+    }
     if(connection_status == -1){
       fprintf(stderr, "Error: Could not connect to the remote socket.\n");
       return 0;
@@ -111,7 +122,13 @@ int main(int argc, char *argv[]){
   }
   else{
     printf("sending data... \n");
-    int sent = sendto(sokt, str, sizeof(str), 0, (struct sockaddr *) &destn_addr, sizeof(destn_addr));
+    int sent;
+
+    if(addr_type==AF_INET){
+      sent = sendto(sokt, str, sizeof(str), 0, (struct sockaddr *) &destn_addr, sizeof(destn_addr));
+    }else {
+      sent = sendto(sokt, str, sizeof(str), 0, (struct sockaddr *) &destn_addr6, sizeof(destn_addr6));
+    }
     if(sent==-1){
       fprintf(stderr, "Error: Unable to send. Closing socket.");
       close(sokt);
