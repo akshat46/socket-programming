@@ -22,7 +22,7 @@ int main(int argc, char *argv[]){
   struct in_addr **host_ip;
   int addr_type;
   struct timeval tv;
-  tv.tv_sec = 60;
+  tv.tv_sec = 5;
   tv.tv_usec = 0;
 
   // getting arguments
@@ -105,6 +105,7 @@ int main(int argc, char *argv[]){
       connection_status = connect(sokt, (struct sockaddr *) &destn_addr6, sizeof(destn_addr6));
     }
     if(connection_status == -1){
+      printf("status %d", connection_status);
       fprintf(stderr, "Error: Could not connect to the remote socket.\n");
       return 0;
     }
@@ -114,6 +115,17 @@ int main(int argc, char *argv[]){
     int sent = send(sokt, str, sizeof(str), 0);
     if(sent==-1){
       fprintf(stderr, "Error: Unableto send. Closing socket.");
+      close(sokt);
+      return 0;
+    }
+    if(port_num==37){
+      long t;
+      len = recv(sokt, (char*)&t, sizeof(t), 0);
+      printf("Server Response time: %ld \n", ntohl(t));
+      return 0;
+    }
+    if(port_num==9){
+      printf("Not expecting response for port 9 (discard)");
       close(sokt);
       return 0;
     }
@@ -131,6 +143,18 @@ int main(int argc, char *argv[]){
     }
     if(sent==-1){
       fprintf(stderr, "Error: Unable to send. Closing socket.");
+      close(sokt);
+      return 0;
+    }
+    if(port_num==37){
+      long t;
+      len = recv(sokt, (char*)&t, sizeof(t), 0);
+      printf("Server Response time: %ld \n", ntohl(t));
+      close(sokt);
+      return 0;
+    }
+    if(port_num==9){
+      printf("Not expecting response for port 9 (discard)");
       close(sokt);
       return 0;
     }
