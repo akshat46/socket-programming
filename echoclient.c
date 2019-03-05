@@ -11,7 +11,7 @@
 #include <string.h> // for strcmp()
 
 int main(int argc, char *argv[]){
-  int type, sokt; //sokt: socket file descriptor, type: type of connection to be used (0: tcp, 1: udp)
+  int type, sokt, port; //sokt: socket file descriptor, type: type of connection to be used (0: tcp, 1: udp)
   const char type_tcp[] = "-tcp";
   const char type_udp[] = "-udp";
   fd_set fdset_send;
@@ -21,9 +21,9 @@ int main(int argc, char *argv[]){
   tv.tv_usec = 0;
 
   // getting arguments
-  if(argc != 4){
+  if(argc != 5){
     const char t = argc - 1;
-    fprintf(stderr, "Error: Incorrect number of arguments: %d \nRequired 3 in the following order: \n1. String \n2. IP Address \n3. Type", t);
+    fprintf(stderr, "Error: Incorrect number of arguments: %d \nRequired 3 in the following order: \n1. String \n2. IP Address \n3. Type \n4. Port", t);
     return 0;
   }
 
@@ -38,6 +38,7 @@ int main(int argc, char *argv[]){
   }
   char str[strlen(argv[1])+1];
   strcpy(str, argv[1]);
+  port = (int)atoi(argv[4]);
 
   // creating a socket
   if(type==0){
@@ -54,10 +55,10 @@ int main(int argc, char *argv[]){
   //specify address
   struct sockaddr_in destn_addr;
   destn_addr.sin_family = AF_INET;
-  destn_addr.sin_port = htons(7);
+  destn_addr.sin_port = htons(port);
   destn_addr.sin_addr.s_addr = inet_addr(argv[2]);
 
-  char response[strlen(str)];
+  char response[256];
   int len;
 
   if(type==0){

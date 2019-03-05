@@ -26,9 +26,9 @@ int main(int argc, char *argv[]){
   tv.tv_usec = 0;
 
   // getting arguments
-  if(argc != 5){
+  if(argc != 6){
     const char t = argc - 1;
-    fprintf(stderr, "Error: Incorrect number of arguments: %d \nRequired 3 in the following order: \n1. String \n2. Domain name \n3.Service Name \n4. Type", t);
+    fprintf(stderr, "Error: Incorrect number of arguments: %d \nRequired 3 in the following order: \n1. String \n2. Domain name \n*3. Service Name \n4. Type ", t);
     return 0;
   }
 
