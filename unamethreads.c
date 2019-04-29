@@ -46,7 +46,6 @@ int main(int argc, char *argv[]){
   signal(SIGCHLD, SIG_IGN);
   pthread_attr_t attrs;
 
-
   if(argc < 2){
     const char t = argc - 1;
     fprintf(stderr, "Error: Incorrect number of arguemnts. Acceptable format: unameserver (-tcp|-udp) *(-port PortNumber) \n* = Optional ");
